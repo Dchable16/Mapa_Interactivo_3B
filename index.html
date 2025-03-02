@@ -367,7 +367,7 @@
                     return response.json();
                 })
                 .then(data => {
-                    console.log(data.objects); // Verifica la estructura de los objetos
+                    console.log("Capas disponibles en el TopoJSON:", Object.keys(data.objects)); // Imprimir los nombres de las capas
                     if (!data.objects[layerName]) {
                         throw new Error(`La capa ${layerName} no se encuentra en el archivo TopoJSON.`);
                     }
