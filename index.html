@@ -331,17 +331,33 @@
         });
 
         // Función para cargar capas TopoJSON desde archivos
-        function loadTopoJSON(url, layerName, type) {
+        // Función para cargar capas TopoJSON desde archivos
+    function loadTopoJSON(url, layerName, type) {
             fetch(url)
                 .then(response => {
                     if (!response.ok) throw new Error(`Error al cargar ${url}: ${response.statusText}`);
                     return response.json();
                 })
                 .then(data => {
-                    const geoJsonData = topojson.feature(data, data.objects[layerName]); // Cambiar 'layerName' por el nombre correcto del objeto en TopoJSON
-                    L.geoJSON(geoJsonData, {
-                        onEachFeature: function (feature, layer) {
-                            layer.on('click', function () {
+                    const colorMap = {
+                        'UsoSuelo': 'rgb(128, 0, 128)',
+                        'Poligono': 'rgb(255, 127, 80)',
+                        'Col': 'rgb(0, 150, 136)',
+                        'Region_Vallejo': 'rgb(204, 85, 0)',
+                        'Municipios': 'rgb(255, 255, 0)',
+                        'Alcaldias': 'rgb(0, 255, 127)',
+                        'Competencias': 'rgb(204, 85, 0)',
+                        'Ageb': url.includes('Ageb_urb_CDMX.json') ? 'rgb(135, 206, 235)' : 'rgb(128, 128, 0)',
+                    };
+        
+                    // Aquí es donde se carga el TopoJSON
+                    const geoJsonData = topojson.feature(data, data.objects[layerName]);
+        
+                    const geoJsonLayer = L.geoJSON(geoJsonData, {
+                        pointToLayer: (feature, latlng) => L.marker(latlng, { icon: customIcon }), // Usar el icono personalizado
+                        style: { color: colorMap[type], weight: 2, fillOpacity: 0.5 },
+                        onEachFeature: (feature, layer) => {
+                            layer.on('click', () => {
                                 let popupContent = "<b>Atributos:</b><br>";
                                 for (const key in feature.properties) {
                                     popupContent += `${key}: ${feature.properties[key]}<br>`;
@@ -349,7 +365,19 @@
                                 layer.bindPopup(popupContent).openPopup(); // Mostrar popup con atributos
                             });
                         }
-                    }).addTo(topoJsonLayersAgeb[layerName]); // Agregar la capa TopoJSON
+                    });
+        
+                    // Agregar la capa al mapa
+                    switch (type) {
+                        case 'Ageb': topoJsonLayersAgeb[layerName] = geoJsonLayer; break;
+                        case 'UsoSuelo': topoJsonLayersUsoSuelo[layerName] = geoJsonLayer; break;
+                        case 'Alcaldias': topoJsonLayersAlcaldias[layerName] = geoJsonLayer; break;
+                        case 'Municipios': topoJsonLayersAlcaldias[layerName] = geoJsonLayer; break;
+                        case 'Poligono': topoJsonLayersPoligonos[layerName] = geoJsonLayer; break;
+                        case 'Col': topoJsonLayersColonias[layerName] = geoJsonLayer; break;
+                        case 'Competencias': topoJsonLayersCompetencias[layerName] = geoJsonLayer; break;
+                    }
+        
                     updateLayerControls(); // Actualizar los controladores de capas
                 })
                 .catch(err => console.error('Error al cargar TopoJSON:', err));
