@@ -367,6 +367,10 @@
                     return response.json();
                 })
                 .then(data => {
+                    console.log(data.objects); // Verifica la estructura de los objetos
+                    if (!data.objects[layerName]) {
+                        throw new Error(`La capa ${layerName} no se encuentra en el archivo TopoJSON.`);
+                    }
                     // Convertir TopoJSON a GeoJSON
                     const geojson = topojson.feature(data, data.objects[layerName]);
                     const colorMap = {
@@ -380,7 +384,7 @@
                         'Ageb': url.includes('Ageb_urb_CDMX.json') ? 'rgb(135, 206, 235)' : 'rgb(128, 128, 0)',
                     };
                     const geoJsonLayer = L.geoJSON(geojson, {
-                        pointToLayer: (feature, latlng) => L.marker(latlng, { icon: customIcon }), // Usar el icono personalizado
+                        pointToLayer: (feature, latlng) => L.marker(latlng, { icon: customIcon }),
                         style: { color: colorMap[type], weight: 2, fillOpacity: 0.5 },
                         onEachFeature: (feature, layer) => {
                             layer.on('click', () => {
@@ -388,7 +392,7 @@
                                 for (const key in feature.properties) {
                                     popupContent += `${key}: ${feature.properties[key]}<br>`;
                                 }
-                                layer.bindPopup(popupContent).openPopup(); // Mostrar popup con atributos
+                                layer.bindPopup(popupContent).openPopup();
                             });
                         }
                     });
