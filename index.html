@@ -1,24 +1,14 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <!-- Configuración de la política de seguridad de contenido -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net 'unsafe-eval'; font-src 'self' data: https://cdn.jsdelivr.net; img-src 'self' data: https://cdn.jsdelivr.net https://github.com https://raw.githubusercontent.com maps.googleapis.com *.gstatic.com mapstreet.com tile.openstreetmap.org mt1.google.com mt0.google.com *.khms.googleapis.com;">
-    
-    <!-- Configuración de caracteres y vista -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
     <title>Mapa interactivo Tiendas 3B</title>
-    <link rel="icon" href="favicon.png"> <!-- Icono de la página -->
-    
-    <!-- Estilo de Leaflet para el mapa -->
+    <link rel="icon" href="favicon.png">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css"/>
-    
-    <!-- Script de Turf.js para operaciones geoespaciales -->
     <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
-    <!-- Script de TopoJSON -->
     <script src="https://cdn.jsdelivr.net/npm/topojson-client@3/topojson.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/1.6.26/topojson.min.js"></script>
     
     <style>
         /* Estilos generales para el documento */
