@@ -16,8 +16,8 @@
     
     <!-- Script de Turf.js para operaciones geoespaciales -->
     <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
-    <!-- Script de TopoJSON -->
-    <script src="https://cdn.jsdelivr.net/npm/topojson-client@3/topojson.min.js"></script>
+    <!-- Script de Leaflet para TopoJSON -->
+    <script src="https://cdn.jsdelivr.net/npm/leaflet-topojson@1.0.0/leaflet.topojson.min.js"></script>
     
     <style>
         /* Estilos generales para el documento */
@@ -108,13 +108,13 @@
         const googleRoadLayer = L.tileLayer("https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}", { attribution: "Google" });
         const googleHybridLayer = L.tileLayer("https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}", { attribution: "Google" });
 
-        // Definición de capas GeoJSON
-        const geoJsonLayersAgeb = {};
-        const geoJsonLayersUsoSuelo = {};
-        const geoJsonLayersAlcaldias = {};
-        const geoJsonLayersPoligonos = {};
-        const geoJsonLayersColonias = {};
-        const geoJsonLayersCompetencias = {};
+        // Definición de capas TopoJSON
+        const topoJsonLayersAgeb = {};
+        const topoJsonLayersUsoSuelo = {};
+        const topoJsonLayersAlcaldias = {};
+        const topoJsonLayersPoligonos = {};
+        const topoJsonLayersColonias = {};
+        const topoJsonLayersCompetencias = {};
         
         // Variables para el marcador y los radios
         let currentMarker = null;
@@ -266,17 +266,7 @@
                 fetch(selectedLayer)
                     .then(response => response.json())
                     .then(data => {
-                        const buffer = turf.circle([lon, lat], 400, { units: 'meters' });
-                        const featuresWithinBuffer = turf.featureCollection(data.features.map(feature => {
-                            const intersection = turf.intersect(feature, buffer);
-                            if (intersection) {
-                                intersection.properties.area = Math.floor(turf.area(intersection)); // Calcular área de la intersección
-                                return intersection;
-                            }
-                            return null;
-                        }).filter(feature => feature !== null)); // Filtrar características nulas
-                        L.geoJSON(featuresWithinBuffer, {
-                            style: { color: 'orange', weight: 2, fillOpacity: 0.5 },
+                        L.topoJson(data, {
                             onEachFeature: function (feature, layer) {
                                 layer.on('click', function () {
                                     let popupContent = "<b>Atributos:</b><br>";
@@ -311,16 +301,7 @@
                 fetch(selectedLayer)
                     .then(response => response.json())
                     .then(data => {
-                        const featuresWithinDifference = turf.featureCollection(data.features.map(feature => {
-                            const intersection = turf.intersect(feature, difference);
-                            if (intersection) {
-                                intersection.properties.area = Math.floor(turf.area(intersection)); // Calcular área de la intersección
-                                return intersection;
-                            }
-                            return null; // Retornar nulo si no hay intersección
-                        }).filter(feature => feature !== null)); // Filtrar características nulas
-                        L.geoJSON(featuresWithinDifference, {
-                            style: { color: 'purple', weight: 2, fillOpacity: 0.5 },
+                        L.topoJson(data, {
                             onEachFeature: function (feature, layer) {
                                 layer.on('click', function () {
                                     let popupContent = "<b>Atributos:</b><br>";
@@ -355,22 +336,9 @@
                     return response.json();
                 })
                 .then(data => {
-                    const geoJson = topojson.feature(data, data.objects[layerName]); // Convertir TopoJSON a GeoJSON
-                    const colorMap = {
-                        'UsoSuelo': 'rgb(128, 0, 128)',
-                        'Poligono': 'rgb(255, 127, 80)',
-                        'Col': 'rgb(0, 150, 136)',
-                        'Region_Vallejo': 'rgb(204, 85, 0)',
-                        'Municipios': 'rgb(255, 255, 0)',
-                        'Alcaldias': 'rgb(0, 255, 127)',
-                        'Competencias': 'rgb(204, 85, 0)',
-                        'Ageb': url.includes('Ageb_urb_CDMX.json') ? 'rgb(135, 206, 235)' : 'rgb(128, 128, 0)',
-                    };
-                    const geoJsonLayer = L.geoJSON(geoJson, {
-                        pointToLayer: (feature, latlng) => L.marker(latlng, { icon: customIcon }), // Usar el icono personalizado
-                        style: { color: colorMap[type], weight: 2, fillOpacity: 0.5 },
-                        onEachFeature: (feature, layer) => {
-                            layer.on('click', () => {
+                    L.topoJson(data, {
+                        onEachFeature: function (feature, layer) {
+                            layer.on('click', function () {
                                 let popupContent = "<b>Atributos:</b><br>";
                                 for (const key in feature.properties) {
                                     popupContent += `${key}: ${feature.properties[key]}<br>`;
@@ -378,16 +346,7 @@
                                 layer.bindPopup(popupContent).openPopup(); // Mostrar popup con atributos
                             });
                         }
-                    });
-                    switch (type) {
-                        case 'Ageb': geoJsonLayersAgeb[layerName] = geoJsonLayer; break;
-                        case 'UsoSuelo': geoJsonLayersUsoSuelo[layerName] = geoJsonLayer; break;
-                        case 'Alcaldias': geoJsonLayersAlcaldias[layerName] = geoJsonLayer; break;
-                        case 'Municipios': geoJsonLayersAlcaldias[layerName] = geoJsonLayer; break;
-                        case 'Poligono': geoJsonLayersPoligonos[layerName] = geoJsonLayer; break;
-                        case 'Col': geoJsonLayersColonias[layerName] = geoJsonLayer; break;
-                        case 'Competencias': geoJsonLayersCompetencias[layerName] = geoJsonLayer; break;
-                    }
+                    }).addTo(topoJsonLayersAgeb[layerName]); // Agregar la capa TopoJSON
                     updateLayerControls(); // Actualizar los controladores de capas
                 })
                 .catch(err => console.error('Error al cargar TopoJSON:', err));
@@ -402,12 +361,12 @@
 
         // Controladores de capas
         const layerControlBase = L.control.layers(baseMaps, null).addTo(map);
-        let layerControlAgeb = L.control.layers(null, geoJsonLayersAgeb, { collapsed: true }).addTo(map);
-        let layerControlUsoSuelo = L.control.layers(null, geoJsonLayersUsoSuelo, { collapsed: true }).addTo(map);
-        let layerControlAlcaldias = L.control.layers(null, geoJsonLayersAlcaldias, { collapsed: true }).addTo(map);
-        let layerControlPoligonos = L.control.layers(null, geoJsonLayersPoligonos, { collapsed: true }).addTo(map);
-        let layerControlColonias = L.control.layers(null, geoJsonLayersColonias, { collapsed: true }).addTo(map);
-        let layerControlCompetencias = L.control.layers(null, geoJsonLayersCompetencias, { collapsed: true }).addTo(map);
+        let layerControlAgeb = L.control.layers(null, topoJsonLayersAgeb, { collapsed: true }).addTo(map);
+        let layerControlUsoSuelo = L.control.layers(null, topoJsonLayersUsoSuelo, { collapsed: true }).addTo(map);
+        let layerControlAlcaldias = L.control.layers(null, topoJsonLayersAlcaldias, { collapsed: true }).addTo(map);
+        let layerControlPoligonos = L.control.layers(null, topoJsonLayersPoligonos, { collapsed: true }).addTo(map);
+        let layerControlColonias = L.control.layers(null, topoJsonLayersColonias, { collapsed: true }).addTo(map);
+        let layerControlCompetencias = L.control.layers(null, topoJsonLayersCompetencias, { collapsed: true }).addTo(map);
 
         // Agregar los grupos de capas de radios y diferencia a un nuevo controlador
         const layerControlRadios = L.control.layers(null, {
@@ -426,12 +385,12 @@
             layerControlPoligonos.remove();
             layerControlColonias.remove();
             layerControlCompetencias.remove();
-            layerControlAgeb = L.control.layers(null, geoJsonLayersAgeb, { collapsed: true }).addTo(map);
-            layerControlUsoSuelo = L.control.layers(null, geoJsonLayersUsoSuelo, { collapsed: true }).addTo(map);
-            layerControlAlcaldias = L.control.layers(null, geoJsonLayersAlcaldias, { collapsed: true }).addTo(map);
-            layerControlPoligonos = L.control.layers(null, geoJsonLayersPoligonos, { collapsed: true }).addTo(map);
-            layerControlColonias = L.control.layers(null, geoJsonLayersColonias, { collapsed: true }).addTo(map);
-            layerControlCompetencias = L.control.layers(null, geoJsonLayersCompetencias, { collapsed: true }).addTo(map);
+            layerControlAgeb = L.control.layers(null, topoJsonLayersAgeb, { collapsed: true }).addTo(map);
+            layerControlUsoSuelo = L.control.layers(null, topoJsonLayersUsoSuelo, { collapsed: true }).addTo(map);
+            layerControlAlcaldias = L.control.layers(null, topoJsonLayersAlcaldias, { collapsed: true }).addTo(map);
+            layerControlPoligonos = L.control.layers(null, topoJsonLayersPoligonos, { collapsed: true }).addTo(map);
+            layerControlColonias = L.control.layers(null, topoJsonLayersColonias, { collapsed: true }).addTo(map);
+            layerControlCompetencias = L.control.layers(null, topoJsonLayersCompetencias, { collapsed: true }).addTo(map);
         }
 
         // Cargar capas TopoJSON desde archivos
